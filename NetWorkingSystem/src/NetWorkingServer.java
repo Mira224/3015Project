@@ -19,14 +19,14 @@ public class NetWorkingServer {
 		byte[] buffer = new byte[1024];
 		boolean whetherLogin = false;
 		boolean whetherExit = false;
-		
-			
-		while(true) {
+
+		while (whetherExit == false) {
 			System.out.printf("Listening at port %d...\n", port);
 
 			Socket clientSocket = srvSocket.accept();
 
-			System.out.printf("Established a connection to host %s:%d\n\n", clientSocket.getInetAddress(),clientSocket.getPort());
+			System.out.printf("Established a connection to host %s:%d\n\n", clientSocket.getInetAddress(),
+					clientSocket.getPort());
 
 			DataInputStream in = new DataInputStream(clientSocket.getInputStream());
 			DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
@@ -39,7 +39,7 @@ public class NetWorkingServer {
 
 			switch (com[0]) {
 			// login
-			case "0":
+			case "login":
 				if (whetherLogin == false) {
 					if (Login(com[1] + " " + com[2])) {
 						reMsg = "Login success";
@@ -52,24 +52,41 @@ public class NetWorkingServer {
 				}
 				break;
 			// read file list
-			case "1":
+			case "dir":
 				reMsg = readFile(com[1]);
 				break;
 			// create sub-directories
-			case "2":
+			case "md":
 				reMsg = createDir(com[1]);
-				
+
 				// upload files
-			case "3":
-				reMsg=uploadFile(com[1]);
-				//download  files
-			case "4":
-				
-			case "9":
+			case "upload":
+				reMsg = uploadFile(com[1]);
+				// download files
+			case "download":
+				break;
+			// delete file
+			case "del":
+				reMsg = delFile(com[1]);
+				break;
+			// delete sub-directory
+			case "rd":
+				reMsg = delDir(com[1]);
+				break;
+			// change file/target name
+			case "ren":
+				reMsg = rename(com[1], com[2]);
+				break;
+			// read files details
+			case "readDe":
+				reMsg=shwDetail(com[1]);
+				break;
+			// logout
+			case "logout":
 				whetherLogin = false;
 				break;
 			// exit
-			case "10":
+			case "exit":
 				whetherExit = true;
 				whetherLogin = false;
 				break;
@@ -80,12 +97,13 @@ public class NetWorkingServer {
 			out.writeInt(reMsg.length());
 			out.write(reMsg.getBytes(), 0, reMsg.length());
 			clientSocket.close();
-			
-		} 
+
+		}
+
 	}
 
 	// login function
-	public static boolean Login(String userinfo) throws IOException {
+	public boolean Login(String userinfo) throws IOException {
 		File user = new File("userinfo.txt");
 		Scanner u = new Scanner(user);
 		while (u.hasNext()) {
@@ -99,7 +117,7 @@ public class NetWorkingServer {
 	}
 
 	// function read files
-	public static String readFile(String path) {
+	public  String readFile(String path) {
 		File read = new File(path);
 		if (!read.exists()) {
 			return "Not Find The File.";
@@ -118,29 +136,107 @@ public class NetWorkingServer {
 	}
 
 	// function create sub-directories
-	public static String createDir(String path) {
-		File file = new File(path);
-		if (file.exists() && file.isDirectory()) {
+	public  String createDir(String path) {
+		File create = new File(path);
+		if (create.exists() && create.isDirectory()) {
 			return "The Directory Exists!";
 		}
 		new File(path).mkdirs();
-		
+
 		return "Created Successfully";
 	}
 
-	//function upload files
-	public static String uploadFile(String path) {
-		
+	// function upload files x
+	public  String uploadFile(String path) {
+
 		return "Successfully Upload";
 	}
-	
-	
-	
-	
-	
-	
-	
+	// function rename file
+	public String rename(String path, String filename) throws IOException {
+		String reMsg = "Successfully renamed.";
+		File dir = new File(path);
+		String newFileName = dir.getParent() + filename;
+		File newFile = new File(newFileName);
+		if (dir.isDirectory()) {
+			reMsg = "This is not a file";
+		} else if (dir.isFile()) {
+			if (!dir.exists()) {
+				reMsg = "File Not Fiound";
+
+			} else {
+				boolean re = dir.renameTo(newFile);
+				if (!re) {
+					reMsg = "Fail.";
+				}
+			}
+		}
+
+		return reMsg;
+	}
+
+	// function delete file
+	public String delFile(String path) {
+		File delf = new File(path);
+		if (delf.exists()) {
+			if (delf.isDirectory()) {
+				return "To delete a directory, use RD command.";
+			}
+			new File(path).delete();
+			return "Successful delete" + path;
+		}
+		return "Cannot Find File " + path;
+	}
+
+	// function delete sub-directory
+	public String delDir(String path) {
+		File dir = new File(path);
+		if (dir.exists()) {
+			if (dir.isFile()) {
+				return "To delete a directory, use DEL command.";
+			}
+			File[] f = dir.listFiles();
+			if (f.length != 0) {
+				return "The Directory " + path + " Is Not Empty!";
+			}
+			new File(path).delete();
+			return "Successful delete" + path;
+		}
+		return "Cannot Find Directory \"+path";
+
+	}
+
+	// function show file details
+	public String shwDetail(String path) throws IOException {
+		File show=new File(path);
+		String str1="name : " + show.getName()+"\n";
+		String str2="size (bytes) : " + show.length()+"\n";
+		String str3="absolute path? : " + show.isAbsolute()+"\n";
+		String str4="exists? : " + show.exists()+"\n";
+		String str5="hidden? : " + show.isHidden()+"\n";
+		String str6="dir? : " + show.isDirectory()+"\n";
+		String str7="file? : " + show.isFile()+"\n";
+		String str8="modified (timestamp) : " + show.lastModified()+"\n";
+		String str9="readable? : " + show.canRead()+"\n";
+		String strA="writable? : " + show.canWrite()+"\n";
+		String strB="executable? : " + show.canExecute()+"\n";
+		String strC="parent : " + show.getParent()+"\n";
+		String strD="absolute file : " + show.getAbsoluteFile()+"\n";
+		String strE="absolute path : " + show.getAbsolutePath()+"\n";
+		String strF="canonical file : " + show.getCanonicalFile()+"\n";
+		String strG="canonical path : " + show.getCanonicalPath()+"\n";
+		String strH="partition space (bytes) : " + show.getTotalSpace()+"\n";
+		String strI="usable space (bytes) : " + show.getUsableSpace()+"\n";
+		
+		return str1+str2+str3+str4+str5+str6+str7+str8+str9+strA+strB+strC+strD+strE+strF+strG+strH+strI;
+	}
+
 	public static void main(String[] args) throws IOException {
-		new NetWorkingServer(9999);
+		int tcpPort=9999;
+		int udpPort=9998;
+		try {
+			new NetWorkingServer(tcpPort);
+		} catch (IOException e) {
+			System.err.println("Failed to connect port");
+		}
 	}
 }
