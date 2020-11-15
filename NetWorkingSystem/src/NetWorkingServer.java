@@ -1,6 +1,8 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -19,6 +21,8 @@ public class NetWorkingServer {
 		byte[] buffer = new byte[1024];
 		boolean whetherLogin = false;
 		boolean whetherExit = false;
+		DataInputStream in;
+		DataOutputStream out;
 
 		while (whetherExit == false) {
 			System.out.printf("Listening at port %d...\n", port);
@@ -28,8 +32,8 @@ public class NetWorkingServer {
 			System.out.printf("Established a connection to host %s:%d\n\n", clientSocket.getInetAddress(),
 					clientSocket.getPort());
 
-			DataInputStream in = new DataInputStream(clientSocket.getInputStream());
-			DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
+			in = new DataInputStream(clientSocket.getInputStream());
+			out = new DataOutputStream(clientSocket.getOutputStream());
 			int len = in.readInt();
 			in.read(buffer, 0, len);
 
@@ -61,10 +65,53 @@ public class NetWorkingServer {
 
 				// upload files
 			case "upload":
-				reMsg = uploadFile(com[1]);
+				try {
+					System.out.print("Downloading file %s " + com[2]);
+					long size = in.readLong();
+					System.out.printf("(%d)", size);
+
+					File file = new File(com[1]);
+					FileOutputStream output = new FileOutputStream(file);
+
+					while(size > 0) {
+						int read = in.read(buffer, 0, buffer.length);
+						output.write(buffer, 0, read);
+						size -= read;
+					}
+					System.out.print("\nDownload completed.");
+					reMsg="Upload completed.";
+					in.close();
+					output.close();
+				} catch (IOException e) {
+					System.err.println("Unable to download the file.");
+					reMsg="Unable to upload file.";
+				}
+				break;
+				
 				// download files
 			case "download":
+				try {
+					System.out.print("Uploading file %s " + com[1]);
+					File file = new File(com[1]);
+					FileInputStream input = new FileInputStream(file);
+					out.writeInt(file.getName().length());
+					out.write(file.getName().getBytes());
+					long size = file.length();
+					out.writeLong(size);
+					while (size > 0) {
+						int read = input.read(buffer, 0, buffer.length);
+						out.write(buffer, 0, read);
+						size -= read;
+					}
+					input.close();
+					out.close();
+					System.out.println("Finishied!");
+				} catch (IOException e) {
+					System.err.println("Unable to upload file.");
+					reMsg="Unable to download the file.";
+				}
 				break;
+				
 			// delete file
 			case "del":
 				reMsg = delFile(com[1]);
@@ -145,35 +192,7 @@ public class NetWorkingServer {
 
 		return "Created Successfully";
 	}
-
-	// function upload files x
-	public  String uploadFile(String path) {
-
-		return "Successfully Upload";
-	}
-	// function rename file
-	public String rename(String path, String filename) throws IOException {
-		String reMsg = "Successfully renamed.";
-		File dir = new File(path);
-		String newFileName = dir.getParent() + filename;
-		File newFile = new File(newFileName);
-		if (dir.isDirectory()) {
-			reMsg = "This is not a file";
-		} else if (dir.isFile()) {
-			if (!dir.exists()) {
-				reMsg = "File Not Fiound";
-
-			} else {
-				boolean re = dir.renameTo(newFile);
-				if (!re) {
-					reMsg = "Fail.";
-				}
-			}
-		}
-
-		return reMsg;
-	}
-
+	
 	// function delete file
 	public String delFile(String path) {
 		File delf = new File(path);
@@ -203,6 +222,28 @@ public class NetWorkingServer {
 		}
 		return "Cannot Find Directory \"+path";
 
+	}
+	// function rename file
+	public String rename(String path, String filename) throws IOException {
+		String reMsg = "Successfully renamed.";
+		File dir = new File(path);
+		String newFileName = dir.getParent() + filename;
+		File newFile = new File(newFileName);
+		if (dir.isDirectory()) {
+			reMsg = "This is not a file";
+		} else if (dir.isFile()) {
+			if (!dir.exists()) {
+				reMsg = "File Not Fiound";
+
+			} else {
+				boolean re = dir.renameTo(newFile);
+				if (!re) {
+					reMsg = "Fail.";
+				}
+			}
+		}
+
+		return reMsg;
 	}
 
 	// function show file details
