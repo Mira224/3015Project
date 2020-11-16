@@ -58,14 +58,14 @@ public class NetWorkingClient {
 						System.out.println("Please input the upload directory:");
 						String uploadpath = upload.nextLine();
 						cmd = cmd + " " + uploadpath;
-						out.writeInt(cmd.length());
+						out.writeLong(cmd.length());
 						out.write(cmd.getBytes(), 0, cmd.length());
 						upload(com[1]);
 						upload.close();
 
 					} else if(com[0].equalsIgnoreCase("download")){
 				
-						out.writeInt(cmd.length());
+						out.writeLong(cmd.length());
 						out.write(cmd.getBytes(), 0, cmd.length());
 						download();
 					}else {
@@ -137,17 +137,11 @@ public class NetWorkingClient {
 	}
 	}
 
-	public void readFileList() {
-		Scanner scanner = new Scanner(System.in);
-		System.out.print("File: ");
-		String filename = scanner.nextLine().trim();
-
-	}
 
 	public static void main(String[] args) throws IOException {
 		// NetWorkingClient client = new NetWorkingClient("", 9999);
 		// client.setup();
-		new NetWorkingClient("192.168.31.238", TCPport);
+		new NetWorkingClient("158.182.191.220", TCPport);
 	}
 
 }
