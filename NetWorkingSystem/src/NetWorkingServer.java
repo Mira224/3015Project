@@ -24,128 +24,140 @@ public class NetWorkingServer {
 		DataInputStream in;
 		DataOutputStream out;
 
-		while (whetherExit == false) {
+		try {
+			
 			System.out.printf("Listening at port %d...\n", port);
 
 			Socket clientSocket = srvSocket.accept();
 
 			System.out.printf("Established a connection to host %s:%d\n\n", clientSocket.getInetAddress(),
 					clientSocket.getPort());
-
 			in = new DataInputStream(clientSocket.getInputStream());
 			out = new DataOutputStream(clientSocket.getOutputStream());
-			int len = in.readInt();
-			in.read(buffer, 0, len);
+			
+			while (whetherExit == false) {
+				
+				int len = in.readInt();
+				in.read(buffer, 0, len);
 
-			String command = new String(buffer, 0, len);
-			String[] com = command.split("\\s");
-			String reMsg = "";
+				String command = new String(buffer, 0, len);
+				String[] com = command.split("\\s");
+				String reMsg = "";
 
-			switch (com[0]) {
-			// login
-			case "login":
-				if (whetherLogin == false) {
-					if (Login(com[1] + " " + com[2])) {
-						reMsg = "Login success";
-						whetherLogin = true;
+				switch (com[0]) {
+				// login (once only)
+				case "login":
+					if (whetherLogin == false) {
+						if (Login(com[1] + " " + com[2])) {
+							reMsg = "Login success";
+							whetherLogin = true;
+						} else {
+							reMsg = "Login failed";
+						}
 					} else {
-						reMsg = "Login failed";
+						reMsg = "Already Logged in";
 					}
-				} else {
-					reMsg = "Already Logged in";
-				}
-				break;
-			// read file list
-			case "dir":
-				reMsg = readFile(com[1]);
-				break;
-			// create sub-directories
-			case "md":
-				reMsg = createDir(com[1]);
+					break;
+				// read file list ok
+				case "dir":
+					reMsg = readFile(com[1]);
+					break;
+				// create sub-directories ok
+				case "md":
+					reMsg = createDir(com[1]);
+					break;
+					// upload files
+				case "upload":
+					try {
+						System.out.print("Downloading file " + com[2]);
+						long size = in.readLong();
+						System.out.print(" "+size);
 
-				// upload files
-			case "upload":
-				try {
-					System.out.print("Downloading file %s " + com[2]);
-					long size = in.readLong();
-					System.out.printf("(%d)", size);
+						File file = new File(com[2]);
+						FileOutputStream output = new FileOutputStream(file);
+						System.out.println("abc");
 
-					File file = new File(com[1]);
-					FileOutputStream output = new FileOutputStream(file);
-
-					while(size > 0) {
-						int read = in.read(buffer, 0, buffer.length);
-						output.write(buffer, 0, read);
-						size -= read;
+						while(size > 0) {
+							int re = in.read(buffer, 0, buffer.length);
+							output.write(buffer, 0, re);
+							size -= re;
+							System.out.println(size);
+						}
+						
+						System.out.printf("\nDownload completed."+"\n");
+						reMsg="Upload completed.";
+						
+					} catch (IOException e) {
+						System.err.println("Unable to download the file.");
+						reMsg="Unable to upload file.";
 					}
-					System.out.print("\nDownload completed.");
-					reMsg="Upload completed.";
-					in.close();
-					output.close();
-				} catch (IOException e) {
-					System.err.println("Unable to download the file.");
-					reMsg="Unable to upload file.";
+					break;
+					
+					// download files
+				case "download":
+					try {
+						System.out.printf("Uploading file " + com[1]);
+						File file = new File(com[1]);
+						FileInputStream input = new FileInputStream(file);
+						out.writeInt(file.getName().length());
+						out.write(file.getName().getBytes());
+						long size = file.length();
+						out.writeLong(size);
+						while (size > 0) {
+							int read = input.read(buffer, 0, buffer.length);
+							out.write(buffer, 0, read);
+							size -= read;
+						}
+						input.close();
+						System.out.println("Finishied!");
+					} catch (IOException e) {
+						System.err.println("Unable to upload file.");
+						reMsg="Unable to download the file.";
+					}
+					
+					break;
+					
+				// delete file ok
+				case "del":
+					reMsg = delFile(com[1]);
+					break;
+				// delete sub-directory ok
+				case "rd":
+					reMsg = delDir(com[1]);
+					break;
+				// change file/target name ok
+				case "ren":
+					reMsg = rename(com[1], com[2]);
+					break;
+				// read files details
+				case "readDe":
+					reMsg=shwDetail(com[1]);
+					break;
+				// logout
+				case "logout":
+					whetherLogin = false;
+					break;
+				// exit
+				case "exit":
+					whetherExit = true;
+					whetherLogin = false;
+					break;
+				default:
+					reMsg = "Invalid command";
 				}
-				break;
+
+				out.writeInt(reMsg.length());
+				out.write(reMsg.getBytes(), 0, reMsg.length());
 				
-				// download files
-			case "download":
-				try {
-					System.out.print("Uploading file %s " + com[1]);
-					File file = new File(com[1]);
-					FileInputStream input = new FileInputStream(file);
-					out.writeInt(file.getName().length());
-					out.write(file.getName().getBytes());
-					long size = file.length();
-					out.writeLong(size);
-					while (size > 0) {
-						int read = input.read(buffer, 0, buffer.length);
-						out.write(buffer, 0, read);
-						size -= read;
-					}
-					input.close();
-					out.close();
-					System.out.println("Finishied!");
-				} catch (IOException e) {
-					System.err.println("Unable to upload file.");
-					reMsg="Unable to download the file.";
-				}
-				break;
-				
-			// delete file
-			case "del":
-				reMsg = delFile(com[1]);
-				break;
-			// delete sub-directory
-			case "rd":
-				reMsg = delDir(com[1]);
-				break;
-			// change file/target name
-			case "ren":
-				reMsg = rename(com[1], com[2]);
-				break;
-			// read files details
-			case "readDe":
-				reMsg=shwDetail(com[1]);
-				break;
-			// logout
-			case "logout":
-				whetherLogin = false;
-				break;
-			// exit
-			case "exit":
-				whetherExit = true;
-				whetherLogin = false;
-				break;
-			default:
-				reMsg = "Invalid command";
 			}
-
-			out.writeInt(reMsg.length());
-			out.write(reMsg.getBytes(), 0, reMsg.length());
+			in.close();
+			out.close();
 			clientSocket.close();
-
+		}catch(IOException e) {
+			System.out.printf("Failed to connect port %d...\\n",port);
+			
 		}
+		
 
 	}
 
@@ -155,11 +167,11 @@ public class NetWorkingServer {
 		Scanner u = new Scanner(user);
 		while (u.hasNext()) {
 			if (u.nextLine().equals(userinfo)) {
-				u.close();
+//				u.close();
 				return true;
 			}
 		}
-		u.close();
+//		u.close();
 		return false;
 	}
 
@@ -173,10 +185,11 @@ public class NetWorkingServer {
 		File[] files = read.listFiles();
 		for (File f : files) {
 			if (!f.isFile()) {
-				String forFile = String.format("%s %10d %s/n", new Date(f.lastModified()), f.length(), f.getName());
-				reMsg += forFile;
-				String forDir = String.format("%s %10s %s/n", new Date(f.lastModified()), "<DIR>", f.getName());
+				String forDir = String.format("%s %10s %s\n", new Date(f.lastModified()), "<DIR>", f.getName());
 				reMsg += forDir;
+			}else{
+				String forFile = String.format("%s %10d %s\n", new Date(f.lastModified()), f.length(), f.getName());
+				reMsg += forFile;
 			}
 		}
 		return reMsg;
@@ -223,28 +236,28 @@ public class NetWorkingServer {
 		return "Cannot Find Directory \"+path";
 
 	}
-	// function rename file
-	public String rename(String path, String filename) throws IOException {
-		String reMsg = "Successfully renamed.";
-		File dir = new File(path);
-		String newFileName = dir.getParent() + filename;
-		File newFile = new File(newFileName);
-		if (dir.isDirectory()) {
-			reMsg = "This is not a file";
-		} else if (dir.isFile()) {
-			if (!dir.exists()) {
-				reMsg = "File Not Fiound";
 
-			} else {
-				boolean re = dir.renameTo(newFile);
-				if (!re) {
-					reMsg = "Fail.";
+	// function rename file
+		public String rename(String path, String filename) throws IOException {
+			File rename = new File(path);
+			String newFileName = rename.getParent() + "/"+ filename;
+			File newFile = new File(newFileName);
+			
+			if(rename.exists()) {
+				if (rename.isDirectory()) {
+					return "This is not a file";
+				}else if(rename.isFile()) {
+					boolean re = rename.renameTo(newFile);
+					if (!re) {
+						return  "Fail to rename file "+path;
+					}else {
+						return "Rename compeleted.";
+					}
 				}
 			}
-		}
 
-		return reMsg;
-	}
+			return "File "+path+" is not exist.";
+		}
 
 	// function show file details
 	public String shwDetail(String path) throws IOException {
@@ -274,10 +287,7 @@ public class NetWorkingServer {
 	public static void main(String[] args) throws IOException {
 		int tcpPort=9999;
 		int udpPort=9998;
-		try {
-			new NetWorkingServer(tcpPort);
-		} catch (IOException e) {
-			System.err.println("Failed to connect port");
-		}
+		new NetWorkingServer(tcpPort);
+		
 	}
 }
