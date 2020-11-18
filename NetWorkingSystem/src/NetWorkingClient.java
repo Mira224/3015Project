@@ -42,8 +42,9 @@ public class NetWorkingClient {
 			if (serMsg.equals("Login success")) {
 				login = true;
 				do {
+					
 					System.out.print("Please input your command>");
-					while (scanner.hasNextLine()) {
+					
 						String cmd = scanner.nextLine();
 						String[] com = cmd.split("\\s+");
 						if (com[0].equalsIgnoreCase("logout")) {
@@ -53,7 +54,7 @@ public class NetWorkingClient {
 							System.out.println("See you~");
 
 							break;
-						} else if (com[0].equalsIgnoreCase("upload")) {
+						} else if (com[0].equalsIgnoreCase("upload")) {//command 
 							Scanner upload = new Scanner(System.in);
 							System.out.println("Please input which directory to upload:");
 							String uploadpath = upload.nextLine();
@@ -64,10 +65,12 @@ public class NetWorkingClient {
 							upload.close();
 							break;
 						} else if (com[0].equalsIgnoreCase("download")) {
-
-							out.writeLong(cmd.length());
+							Scanner download = new Scanner(System.in);
+							System.out.print("Please input which directory to download:");
+							String downloadpath = download.nextLine();
+							out.writeInt(cmd.length());
 							out.write(cmd.getBytes(), 0, cmd.length());
-							download();
+							download(downloadpath);
 							break;
 						} else {
 
@@ -80,7 +83,7 @@ public class NetWorkingClient {
 						in.read(buffer, 0, length);
 						String ser = new String(buffer, 0, length);
 						System.out.println(ser);
-					}
+					
 				} while (login);
 			}
 
@@ -102,7 +105,7 @@ public class NetWorkingClient {
 			long size = file.length();
 			out.writeLong(size);
 
-			while (inFile.available() > 0) {
+			while (in.available() > 0) {
 				int len = inFile.read(buffer, 0, buffer.length);
 				out.write(buffer, 0, len);
 			}
@@ -113,25 +116,27 @@ public class NetWorkingClient {
 		}
 	}
 
-	public void download() throws IOException {
+	public void download(String downloadpath) throws IOException {
 		byte[] buffer = new byte[1024];
 		try {
 			int nameLen = in.readInt();
 			in.read(buffer, 0, nameLen);
 			String name = new String(buffer, 0, nameLen);
+			String apath = downloadpath +"/"+ name;
+			File newfile = new File(apath);
 			long size = in.readLong();
-			File newfile = new File(name);
+			
 			FileOutputStream output = new FileOutputStream(newfile);
 			while (size > 0) {
 				int len = in.read(buffer, 0, buffer.length);
 				output.write(buffer, 0, len);
 				size -= len;
-				System.out.print(".");
+//				System.out.print(size+" ");
 			}
 			System.out.println("\nDownload completed.");
 
-			in.close();
-			output.close();
+//			in.close();
+//			output.close();
 		} catch (IOException e) {
 			System.err.println("unable to download file.");
 		}
@@ -140,7 +145,9 @@ public class NetWorkingClient {
 	public static void main(String[] args) throws IOException {
 		// NetWorkingClient client = new NetWorkingClient("", 9999);
 		// client.setup();
-		new NetWorkingClient("192.168.31.238", TCPport);
+//		new NetWorkingClient("192.168.31.238", TCPport);
+		new NetWorkingClient("158.182.114.18", TCPport);
+		
 	}
 
 }

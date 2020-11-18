@@ -48,6 +48,7 @@ public class NetWorkingServer {
 				// login (once only)
 				case "login":
 					if (whetherLogin == false) {
+						System.out.println("in!");
 						if (Login(com[1] + " " + com[2])) {
 							reMsg = "Login success";
 							whetherLogin = true;
@@ -81,7 +82,7 @@ public class NetWorkingServer {
 							int re = in.read(buffer, 0, buffer.length);
 							output.write(buffer, 0, re);
 							size -= re;
-							System.out.println(size);
+//							System.out.println(size);
 						}
 						
 						System.out.printf("\nDownload completed."+"\n");
@@ -93,7 +94,7 @@ public class NetWorkingServer {
 					}
 					break;
 					
-					// download files
+					// download files ok
 				case "download":
 					try {
 						System.out.printf("Uploading file " + com[1]);
@@ -107,9 +108,8 @@ public class NetWorkingServer {
 							int read = input.read(buffer, 0, buffer.length);
 							out.write(buffer, 0, read);
 							size -= read;
+							System.out.println(size);
 						}
-						input.close();
-						System.out.println("Finishied!");
 					} catch (IOException e) {
 						System.err.println("Unable to upload file.");
 						reMsg="Unable to download the file.";
@@ -129,16 +129,18 @@ public class NetWorkingServer {
 				case "ren":
 					reMsg = rename(com[1], com[2]);
 					break;
-				// read files details
+				// read files details ok
 				case "readDe":
 					reMsg=shwDetail(com[1]);
 					break;
 				// logout
 				case "logout":
+					reMsg="Good bye.";
 					whetherLogin = false;
 					break;
 				// exit
 				case "exit":
+					reMsg="Bye~";
 					whetherExit = true;
 					whetherLogin = false;
 					break;
