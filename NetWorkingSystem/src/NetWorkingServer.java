@@ -8,8 +8,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Date;
 import java.util.Scanner;
-//import java.io.FileInputStream;
-//import java.io.FileOutputStream;
+
 
 public class NetWorkingServer {
 	ServerSocket srvSocket;
@@ -76,13 +75,12 @@ public class NetWorkingServer {
 
 						File file = new File(com[2]);
 						FileOutputStream output = new FileOutputStream(file);
-						System.out.println("abc");
+						
 
 						while(size > 0) {
 							int re = in.read(buffer, 0, buffer.length);
 							output.write(buffer, 0, re);
 							size -= re;
-//							System.out.println(size);
 						}
 						
 						System.out.printf("\nDownload completed."+"\n");
@@ -177,7 +175,7 @@ public class NetWorkingServer {
 		return false;
 	}
 
-	// function read files
+	// function read files ok
 	public  String readFile(String path) {
 		File read = new File(path);
 		if (!read.exists()) {
@@ -197,7 +195,7 @@ public class NetWorkingServer {
 		return reMsg;
 	}
 
-	// function create sub-directories
+	// function create sub-directories ok
 	public  String createDir(String path) {
 		File create = new File(path);
 		if (create.exists() && create.isDirectory()) {
@@ -208,7 +206,7 @@ public class NetWorkingServer {
 		return "Created Successfully";
 	}
 	
-	// function delete file
+	// function delete file ok
 	public String delFile(String path) {
 		File delf = new File(path);
 		if (delf.exists()) {
@@ -221,7 +219,7 @@ public class NetWorkingServer {
 		return "Cannot Find File " + path;
 	}
 
-	// function delete sub-directory
+	// function delete sub-directory ok
 	public String delDir(String path) {
 		File dir = new File(path);
 		if (dir.exists()) {
@@ -239,7 +237,7 @@ public class NetWorkingServer {
 
 	}
 
-	// function rename file
+	// function rename file ok
 		public String rename(String path, String filename) throws IOException {
 			File rename = new File(path);
 			String newFileName = rename.getParent() + "/"+ filename;
@@ -261,7 +259,7 @@ public class NetWorkingServer {
 			return "File "+path+" is not exist.";
 		}
 
-	// function show file details
+	// function show file details ok
 	public String shwDetail(String path) throws IOException {
 		File show=new File(path);
 		String str1="name : " + show.getName()+"\n";
