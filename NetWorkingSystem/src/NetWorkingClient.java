@@ -14,17 +14,44 @@ public class NetWorkingClient {
 	DataInputStream in;
 	DataOutputStream out;
 
+	
+
 	public NetWorkingClient(String serverIP, int port) throws IOException {
-		Scanner scanner = new Scanner(System.in);
+		
 
 		clientSocket = new Socket(serverIP, port);
 		in = new DataInputStream(clientSocket.getInputStream());
 		out = new DataOutputStream(clientSocket.getOutputStream());
 
-		byte[] buffer = new byte[1024];
-		boolean login = false;
-		boolean exit = false;
 
+		Thread t = new Thread(() ->{
+			byte[] buffer = new byte[1024];
+			boolean login = false;
+			boolean exit = false;
+			try {
+				while (true) {
+
+					appStart(buffer,login,exit);
+				}
+				
+				
+			}catch(IOException ex) {
+				System.err.println("Connection dropped!");
+				System.exit(-1);
+			}
+		});
+		t.start();
+
+		
+
+//		out.close();
+//		clientSocket.close();
+		
+
+	}
+
+	public void appStart(byte[] buffer,boolean login, boolean exit) throws IOException {
+		Scanner scanner = new Scanner(System.in);
 		do {
 			System.out.print("Please input your username: ");
 			String username = scanner.nextLine();
@@ -91,13 +118,9 @@ public class NetWorkingClient {
 			}
 
 		} while (!login);
-
-		out.close();
-		clientSocket.close();
 		scanner.close();
-
 	}
-
+	
 	public void upload(String path) {
 
 		try {
@@ -136,7 +159,7 @@ public class NetWorkingClient {
 				size -= len;
 //				System.out.print(size+" ");
 			}
-			System.out.println("\nDownload completed.");
+			System.out.println("\n Client download completed.");
 
 //			in.close();
 //			output.close();
@@ -148,9 +171,9 @@ public class NetWorkingClient {
 	public static void main(String[] args) throws IOException {
 		// NetWorkingClient client = new NetWorkingClient("", 9999);
 		// client.setup();
-//		new NetWorkingClient("192.168.31.238", TCPport);
-		new NetWorkingClient("158.182.8.145", TCPport);
-		
+		new NetWorkingClient("192.168.31.238", TCPport);
+//		new NetWorkingClient("158.182.8.145", TCPport);
+//		new NetWorkingClient("192.168.31.199", TCPport);
 	}
 
 }
