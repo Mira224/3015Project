@@ -4,39 +4,115 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Scanner;
 
-public class NetWorkingClient {
+class Server {
+	String srvName;
+	String IP;
+}
+
+public class v3Client {
 	static int TCPport = 9999;
+	static int UDPport = 9998;
+	DatagramSocket udpSocket;
 	Socket clientSocket;
 	String com = "";// which command the user require
 	DataInputStream in;
 	DataOutputStream out;
+	ArrayList<Server> srvList = new ArrayList<Server>();
 
-	public NetWorkingClient(String serverIP, int port) throws IOException {
-
-		clientSocket = new Socket(serverIP, port);
-		in = new DataInputStream(clientSocket.getInputStream());
-		out = new DataOutputStream(clientSocket.getOutputStream());
-
-		Thread t = new Thread(() -> {
-
-			boolean login = false;
-			boolean exit = false;
+	public v3Client() {
+		Thread t1 = new Thread(() -> {
 			try {
-				while (true) {
-
-					appStart(login, exit);
-				}
-
-			} catch (IOException ex) {
-				System.err.println("Connection dropped!");
-				System.exit(-1);
+				discovery(UDPport);
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-		});
-		t.start();
 
+		});
+		t1.start();
+
+		Thread t2 = new Thread(() -> {
+			try {
+				while (true)
+					new v3Client(srvList, TCPport);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+		});
+		t2.start();
+	}
+
+	public void discovery(int udpPort) throws IOException {
+		udpSocket = new DatagramSocket(udpPort);
+		byte[] str = "Online".getBytes();
+		InetAddress destination = InetAddress.getByName("255.255.255.255");
+		DatagramPacket packet = new DatagramPacket(str, str.length, destination, udpPort);
+		udpSocket.send(packet);
+		System.out.println("UP.");
+
+		while (true) {
+
+			System.out.println("In while.");
+			DatagramPacket p = new DatagramPacket(new byte[1024], 1024);
+			udpSocket.receive(p);
+
+			byte[] data = p.getData();
+			String srvInfo = new String(data, 0, p.getLength());
+			if (!srvInfo.equals("Online")) {
+				int size = p.getLength();
+				String srcAddr = p.getAddress().toString();
+				srcAddr = srcAddr.substring(1, srcAddr.length());
+				Server s = new Server();
+				s.srvName = srvInfo;
+				s.IP = srcAddr;
+
+				srvList.add(0, s);
+			}
+		}
+
+	}
+
+	public v3Client(ArrayList<Server> srvList2, int port) throws IOException {
+		if (srvList2.size() > 0) {
+			boolean opCorrect = false;
+			int option = 0;
+			for (int i = 0; i < srvList2.size(); i++) {
+				System.out.println(i + " " + srvList2.get(i).IP + " " + srvList2.get(i).srvName);
+			}
+
+			while (!opCorrect) {
+				System.out.println("Which server do you want to join?");
+				Scanner srvOption = new Scanner(System.in);
+				option = srvOption.nextInt();
+				if (option < srvList2.size() && option >= 0)
+					opCorrect = true;
+
+			}
+			if (opCorrect) {
+				clientSocket = new Socket(srvList2.get(option).IP, port);
+				in = new DataInputStream(clientSocket.getInputStream());
+				out = new DataOutputStream(clientSocket.getOutputStream());
+
+				boolean login = false;
+				boolean exit = false;
+				try {
+					while (true) {
+						appStart(login, exit);
+					}
+
+				} catch (IOException ex) {
+					System.err.println("Connection dropped!");
+					System.exit(-1);
+				}
+			}
+		}
 		// out.close();
 		// clientSocket.close();
 
@@ -80,15 +156,15 @@ public class NetWorkingClient {
 					} else if (com[0].equalsIgnoreCase("upload")) {// command
 						upload(cmd);
 						int length = in.readInt();
-					
+
 						System.out.println(length);
 						while (length > 0) {
 							int blen = in.read(buffer, 0, buffer.length);
-						
+
 							String ser = new String(buffer, 0, blen);
 
 							System.out.println(ser);
-							
+
 							length -= blen;
 						}
 					} else if (com[0].equalsIgnoreCase("download")) {
@@ -100,15 +176,15 @@ public class NetWorkingClient {
 						out.writeInt(cmd.length());
 						out.write(cmd.getBytes(), 0, cmd.length());
 						int length = in.readInt();
-				
+
 						System.out.println(length);
 						while (length > 0) {
 							int blen = in.read(buffer, 0, buffer.length);
-			
+
 							String ser = new String(buffer, 0, blen);
 
 							System.out.println(ser);
-					
+
 							length -= blen;
 
 						}
@@ -201,54 +277,53 @@ public class NetWorkingClient {
 		} while (!downloadPathExist);
 		out.writeInt(cmd.length());
 		out.write(cmd.getBytes(), 0, cmd.length());
-		
+
 		byte[] buffer = new byte[1024];
 		int length = in.readInt();
 		in.read(buffer, 0, length);
 
 		System.out.println(length);
-		if(length==0) {
+		if (length == 0) {
 			try {
-			DataInputStream in = new DataInputStream(clientSocket.getInputStream());
-			int nameLen = in.readInt();
-			in.read(buffer, 0, nameLen);
-			String name = new String(buffer, 0, nameLen);
+				DataInputStream in = new DataInputStream(clientSocket.getInputStream());
+				int nameLen = in.readInt();
+				in.read(buffer, 0, nameLen);
+				String name = new String(buffer, 0, nameLen);
 
-			File newfile = new File(downloadpath + name);
-			long size = in.readLong();
+				File newfile = new File(downloadpath + name);
+				long size = in.readLong();
 
-			FileOutputStream output = new FileOutputStream(newfile);
-			while (size > 0) {
-				int len = in.read(buffer, 0, buffer.length);
-				output.write(buffer, 0, len);
-				size -= len;
+				FileOutputStream output = new FileOutputStream(newfile);
+				while (size > 0) {
+					int len = in.read(buffer, 0, buffer.length);
+					output.write(buffer, 0, len);
+					size -= len;
+				}
+				System.out.println("Client download completed.");
+
+			} catch (IOException e) {
+				System.err.println("unable to download file.");
 			}
-			System.out.println("Client download completed.");
+		} else {
 
-		} catch (IOException e) {
-			System.err.println("unable to download file.");
-		}
-		}else {
-			
 			String ser = new String(buffer, 0, length);
 
 			System.out.println(ser);
-		
-			
-		
-		
-		}
-		
 
-		
+		}
+
+	}
+
+	public void end() {
+		udpSocket.close();
+		System.out.println("bye-bye");
 	}
 
 	public static void main(String[] args) throws IOException {
-		// NetWorkingClient client = new NetWorkingClient("", 9999);
-		// client.setup();
-		// new NetWorkingClient("192.168.31.238", TCPport);
-		new NetWorkingClient("158.182.8.174", TCPport);
-		// new NetWorkingClient("192.168.31.199", TCPport);
+
+		v3Client c = new v3Client();
+
+//		c.end();
 	}
 
 }

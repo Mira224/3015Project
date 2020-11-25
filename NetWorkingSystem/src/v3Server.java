@@ -4,23 +4,61 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Scanner;
 
-public class NetWorkingServer {
+public class v3Server {
 	ServerSocket srvSocket;
+	DatagramSocket udpSocket;
 	ArrayList<Socket> list = new ArrayList<Socket>();
 
-	public NetWorkingServer(int port) throws IOException {
+	public v3Server(int tcpPort, int udpPort) throws IOException {
 		// receiving socket from client
+		Thread t1 = new Thread(() -> {
+			try {
+				udpServer(udpPort);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
+		t1.start();
+		Thread t2 = new Thread(() -> {
+			try {
+				tcpServer(tcpPort);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 
-		srvSocket = new ServerSocket(port);
+		});
+		t2.start();
+	}
 
+	public void udpServer(int udpPort) throws IOException {
+		udpSocket = new DatagramSocket(udpPort);// udp
 		while (true) {
-			System.out.printf("Listening at port %d...\n", port);
+			System.out.println("Listening at udpPort...");
+			// receive socket from udp
+			DatagramPacket packet = new DatagramPacket(new byte[1024], 1024);
+			udpSocket.receive(packet);
+			byte[] str = "ServerA".getBytes();
+			InetAddress clientDest = packet.getAddress();
+			DatagramPacket srvPacket = new DatagramPacket(str, str.length, clientDest, udpPort);
+			udpSocket.send(srvPacket);
+		}
+	}
+
+	public void tcpServer(int tcpPort) throws IOException {
+		srvSocket = new ServerSocket(tcpPort);// tcp
+		while (true) {
+
+			// TCP Connection
+			System.out.printf("Listening at port %d...\n", tcpPort);
 			Socket clientSocket = srvSocket.accept();
 
 			synchronized (list) {
@@ -40,6 +78,7 @@ public class NetWorkingServer {
 			});
 			t.start();
 		}
+
 	}
 
 	public void serve(Socket clientSocket) throws IOException {
@@ -123,8 +162,7 @@ public class NetWorkingServer {
 						if (file.isFile()) {
 							reMsg = "";
 							out.writeInt(reMsg.length());
-							out.write(reMsg.getBytes());
-							System.out.printf("Uploading file " + com[1]+"\n");
+							System.out.printf("Uploading file " + com[1]);
 							FileInputStream input = new FileInputStream(file);
 							out.writeInt(file.getName().length());
 							out.write(file.getName().getBytes());
@@ -136,7 +174,7 @@ public class NetWorkingServer {
 								size -= read;
 							}
 							System.out.println("Success upload.");
-							reMsg = "";
+							
 						} else {
 							reMsg = com[1] + "is not a file.";
 						}
@@ -313,7 +351,7 @@ public class NetWorkingServer {
 	public static void main(String[] args) throws IOException {
 		int tcpPort = 9999;
 		int udpPort = 9998;
-		new NetWorkingServer(tcpPort);
+		new v3Server(tcpPort, udpPort);
 
 	}
 }
