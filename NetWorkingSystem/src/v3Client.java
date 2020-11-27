@@ -10,6 +10,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 class Server {
 	String srvName;
@@ -18,7 +19,7 @@ class Server {
 
 public class v3Client {
 	static int TCPport = 9999;
-	static int UDPport = 9998;
+	static int UDPport = 12346;
 	DatagramSocket udpSocket;
 	Socket clientSocket;
 	String com = "";// which command the user require
@@ -32,7 +33,7 @@ public class v3Client {
 				discovery(UDPport);
 			} catch (IOException e) {
 				e.printStackTrace();
-			}
+			} 
 
 		});
 		t1.start();
@@ -46,33 +47,39 @@ public class v3Client {
 			}
 
 		});
+		try {
+			TimeUnit.SECONDS.sleep(2);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		t2.start();
 	}
 
 	public void discovery(int udpPort) throws IOException {
+		System.out.println("dis");
 		udpSocket = new DatagramSocket(udpPort);
-		byte[] str = "Online".getBytes();
+		byte[] str = "PC A".getBytes();
 		InetAddress destination = InetAddress.getByName("255.255.255.255");
-		DatagramPacket packet = new DatagramPacket(str, str.length, destination, udpPort);
+		DatagramPacket packet = new DatagramPacket(str, str.length, destination, 9998);
 		udpSocket.send(packet);
-		System.out.println("UP.");
-
+		
 		while (true) {
 
 			System.out.println("In while.");
 			DatagramPacket p = new DatagramPacket(new byte[1024], 1024);
 			udpSocket.receive(p);
+			if (packet != p) {
+//				System.out.println("In while.");
+				byte[] data = p.getData();
+				String srvInfo = new String(data, 0, p.getLength());
 
-			byte[] data = p.getData();
-			String srvInfo = new String(data, 0, p.getLength());
-			if (!srvInfo.equals("Online")) {
 				int size = p.getLength();
 				String srcAddr = p.getAddress().toString();
 				srcAddr = srcAddr.substring(1, srcAddr.length());
 				Server s = new Server();
 				s.srvName = srvInfo;
 				s.IP = srcAddr;
-
 				srvList.add(0, s);
 			}
 		}
@@ -321,7 +328,7 @@ public class v3Client {
 
 	public static void main(String[] args) throws IOException {
 
-		v3Client c = new v3Client();
+//		v3Client c = new v3Client();
 
 //		c.end();
 	}

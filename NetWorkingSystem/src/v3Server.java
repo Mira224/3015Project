@@ -42,13 +42,13 @@ public class v3Server {
 	public void udpServer(int udpPort) throws IOException {
 		udpSocket = new DatagramSocket(udpPort);// udp
 		while (true) {
-			System.out.println("Listening at udpPort...");
-			// receive socket from udp
+			System.out.println("Listening at udpPort...9998");
 			DatagramPacket packet = new DatagramPacket(new byte[1024], 1024);
 			udpSocket.receive(packet);
-			byte[] str = "ServerA".getBytes();
+			System.out.println("received");
+			byte[] str = "M A".getBytes();
 			InetAddress clientDest = packet.getAddress();
-			DatagramPacket srvPacket = new DatagramPacket(str, str.length, clientDest, udpPort);
+			DatagramPacket srvPacket = new DatagramPacket(str, str.length, clientDest, 12346);
 			udpSocket.send(srvPacket);
 		}
 	}
@@ -174,7 +174,7 @@ public class v3Server {
 								size -= read;
 							}
 							System.out.println("Success upload.");
-							
+
 						} else {
 							reMsg = com[1] + "is not a file.";
 						}
@@ -351,7 +351,7 @@ public class v3Server {
 	public static void main(String[] args) throws IOException {
 		int tcpPort = 9999;
 		int udpPort = 9998;
-		new v3Server(tcpPort, udpPort);
+//		new v3Server(tcpPort, udpPort);
 
 	}
 }
