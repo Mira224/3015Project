@@ -28,7 +28,7 @@ public class v3Client {
 	DataOutputStream out;
 	ArrayList<Server> srvList = new ArrayList<Server>();
 
-	// Open threads to run upd and tcp functions at the same time.
+	//start client side
 	public v3Client() {
 		// udp thread
 		Thread udp = new Thread(() -> {
@@ -44,7 +44,7 @@ public class v3Client {
 		try {
 			TimeUnit.SECONDS.sleep(3);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
+	
 			e.printStackTrace();
 		}
 		// tcp thread
