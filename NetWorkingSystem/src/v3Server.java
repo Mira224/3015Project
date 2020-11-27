@@ -18,6 +18,7 @@ public class v3Server {
     DatagramSocket udpSocket;
     ArrayList<Socket> list = new ArrayList<Socket>();
 
+    //Open threads to listen to udp and tcp at the same time
     public v3Server(int tcpPort, int udpPort) throws IOException {
         // receiving socket from client
         Thread t1 = new Thread(() -> {
@@ -43,7 +44,7 @@ public class v3Server {
         udpSocket = new DatagramSocket(udpPort);// udp
         System.out.println("Listening at udpPort...9998");
         while (true) {
-
+//After receiving the message from the client, send reply
             DatagramPacket packet = new DatagramPacket(new byte[1024], 1024);
             udpSocket.receive(packet);
             byte[] str = "Server A".getBytes();
@@ -54,6 +55,7 @@ public class v3Server {
         }
     }
 
+ //TCP server
     public void tcpServer(int tcpPort) throws IOException {
         srvSocket = new ServerSocket(tcpPort);// tcp
         while (true) {
@@ -82,6 +84,7 @@ public class v3Server {
 
     }
 
+    //The controller of functions for commands received from TCP
     public void serve(Socket clientSocket) throws IOException {
         boolean whetherLogin = false;
         boolean whetherExit = false;
@@ -133,7 +136,7 @@ public class v3Server {
 
                         File chkPath = new File(check);
                         if (chkPath.exists() && chkPath.isDirectory()) {
-                            if (file.exists()) {
+                            if (file.exists()) {//Empty the input stream
                                 while (size > 0) {
                                     int re = in.read(buffer, 0, buffer.length);
                                     size -= re;
@@ -147,7 +150,7 @@ public class v3Server {
                                     output.write(buffer, 0, re);
                                     size -= re;
                                 }
-                                System.out.printf("\nDownload completed." + "\n");
+//                                System.out.printf("\nDownload completed." + "\n");
                                 reMsg = "Upload completed.";
                             }
                         }else{
@@ -182,7 +185,7 @@ public class v3Server {
                                     out.write(buffer, 0, read);
                                     size -= read;
                                 }
-                                System.out.println("Success upload.");
+  //                              System.out.println("Success upload.");
 
                             } else {
                                 reMsg = com[1] + "is not a file.";
@@ -360,7 +363,6 @@ public class v3Server {
     public static void main(String[] args) throws IOException {
         int tcpPort = 9999;
         int udpPort = 9998;
-//		new v3Server(tcpPort, udpPort);
 
     }
 }

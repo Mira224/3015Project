@@ -4,12 +4,10 @@ import java.io.IOException;
 public class Controller {
 
     public static void main(String[] args) throws InterruptedException {
-        // TODO Auto-generated method stub
+
         int TCPport = 9999;
         int UDPport = 9998;
-        //client
 
-        //server
         Thread server = new Thread(() -> {
             try {
                 new v3Server(TCPport, UDPport);
