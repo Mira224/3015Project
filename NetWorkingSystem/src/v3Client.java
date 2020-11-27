@@ -13,324 +13,357 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 class Server {
-	String srvName;
-	String IP;
+    String srvName;
+    String IP;
 }
 
 public class v3Client {
-	static int TCPport = 9999;
-	static int UDPport = 12346;
-	DatagramSocket udpSocket;
-	Socket clientSocket;
-	String com = "";// which command the user require
-	DataInputStream in;
-	DataOutputStream out;
-	ArrayList<Server> srvList = new ArrayList<Server>();
+    static int TCPport = 9999;
+    static int UDPport = 12346;
+    static int UdestPort=9998;
+    DatagramSocket udpSocket;
+    Socket clientSocket;
+    String com = "";// which command the user require
+    DataInputStream in;
+    DataOutputStream out;
+    ArrayList<Server> srvList = new ArrayList<Server>();
 
-	public v3Client() {
-		Thread t1 = new Thread(() -> {
-			try {
-				discovery(UDPport);
-			} catch (IOException e) {
-				e.printStackTrace();
-			} 
+    public v3Client() {
+        //udp thread
+        Thread udp = new Thread(() -> {
+            try {
+                discovery(UDPport);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
-		});
-		t1.start();
+        });
+        udp.start();
 
-		Thread t2 = new Thread(() -> {
-			try {
-				while (true)
-					new v3Client(srvList, TCPport);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+        try {
+            TimeUnit.SECONDS.sleep(3);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        //tcp thread
+        try {
+            while (true)
+                new v3Client(srvList, TCPport);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-		});
-		try {
-			TimeUnit.SECONDS.sleep(2);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		t2.start();
-	}
 
-	public void discovery(int udpPort) throws IOException {
-		System.out.println("dis");
-		udpSocket = new DatagramSocket(udpPort);
-		byte[] str = "PC A".getBytes();
-		InetAddress destination = InetAddress.getByName("255.255.255.255");
-		DatagramPacket packet = new DatagramPacket(str, str.length, destination, 9998);
-		udpSocket.send(packet);
-		
-		while (true) {
+    }
 
-			System.out.println("In while.");
-			DatagramPacket p = new DatagramPacket(new byte[1024], 1024);
-			udpSocket.receive(p);
-			if (packet != p) {
-//				System.out.println("In while.");
-				byte[] data = p.getData();
-				String srvInfo = new String(data, 0, p.getLength());
+    public void discovery(int udpPort) throws IOException {
+        udpSocket = new DatagramSocket(udpPort);
+        byte[] str = "PC A".getBytes();
+        InetAddress destination = InetAddress.getByName("255.255.255.255");
+        DatagramPacket packet = new DatagramPacket(str, str.length, destination, UdestPort);
+        udpSocket.send(packet);
 
-				int size = p.getLength();
-				String srcAddr = p.getAddress().toString();
-				srcAddr = srcAddr.substring(1, srcAddr.length());
-				Server s = new Server();
-				s.srvName = srvInfo;
-				s.IP = srcAddr;
-				srvList.add(0, s);
-			}
-		}
+        while (true) {
 
-	}
 
-	public v3Client(ArrayList<Server> srvList2, int port) throws IOException {
-		if (srvList2.size() > 0) {
-			boolean opCorrect = false;
-			int option = 0;
-			for (int i = 0; i < srvList2.size(); i++) {
-				System.out.println(i + " " + srvList2.get(i).IP + " " + srvList2.get(i).srvName);
-			}
+            DatagramPacket p = new DatagramPacket(new byte[1024], 1024);
+            udpSocket.receive(p);
+            if (packet != p) {
+                byte[] data = p.getData();
+                String srvInfo = new String(data, 0, p.getLength());
 
-			while (!opCorrect) {
-				System.out.println("Which server do you want to join?");
-				Scanner srvOption = new Scanner(System.in);
-				option = srvOption.nextInt();
-				if (option < srvList2.size() && option >= 0)
-					opCorrect = true;
+                int size = p.getLength();
+                String srcAddr = p.getAddress().toString();
+                srcAddr = srcAddr.substring(1, srcAddr.length());
+                Server s = new Server();
+                s.srvName = srvInfo;
+                s.IP = srcAddr;
+                srvList.add(0, s);
 
-			}
-			if (opCorrect) {
-				clientSocket = new Socket(srvList2.get(option).IP, port);
-				in = new DataInputStream(clientSocket.getInputStream());
-				out = new DataOutputStream(clientSocket.getOutputStream());
+            }
+        }
 
-				boolean login = false;
-				boolean exit = false;
-				try {
-					while (true) {
-						appStart(login, exit);
-					}
+    }
 
-				} catch (IOException ex) {
-					System.err.println("Connection dropped!");
-					System.exit(-1);
-				}
-			}
-		}
-		// out.close();
-		// clientSocket.close();
+    public v3Client(ArrayList<Server> srvList2, int port) throws IOException {
+        if (srvList2.size() > 0) {
+            boolean opCorrect = false;
+            int option = 0;
+            for (int i = 0; i < srvList2.size(); i++) {
+                System.out.println(i + " " + srvList2.get(i).IP + " " + srvList2.get(i).srvName);
+            }
 
-	}
+            while (!opCorrect) {
+                System.out.println("Which server do you want to join?");
+                Scanner srvOption = new Scanner(System.in);
+                option = srvOption.nextInt();
+                if (option < srvList2.size() && option >= 0)
+                    opCorrect = true;
 
-	public void appStart(boolean login, boolean exit) throws IOException {
-		Scanner scanner = new Scanner(System.in);
-		do {
-			byte[] buffer = new byte[1024];
-			System.out.print("Please input your username: ");
-			String username = scanner.nextLine();
-			System.out.print("Please input password: ");
-			String password = scanner.nextLine();
+            }
+            if (opCorrect) {
+                clientSocket = new Socket(srvList2.get(option).IP, port);
+                in = new DataInputStream(clientSocket.getInputStream());
+                out = new DataOutputStream(clientSocket.getOutputStream());
 
-			String str = "login " + username + " " + password;
-			out.writeInt(str.length());
-			out.write(str.getBytes(), 0, str.length());
+                boolean login = false;
+                boolean exit = false;
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                try {
 
-			int len = in.readInt();
-			in.read(buffer, 0, len);
-			String serMsg = new String(buffer, 0, len);
-			System.out.println(serMsg);
-			if (serMsg.equals("Login success")) {
-				login = true;
-				do {
+                        appStart(login, exit);
 
-					System.out.print("Please input your command>");
-					Scanner newScanner = new Scanner(System.in);
-					String cmd = newScanner.nextLine();
-					String[] com = cmd.split("\\s+");
-					if (com[0].equalsIgnoreCase("logout")) {
-						login = false;
-						out.writeInt(cmd.length());
-						out.write(cmd.getBytes(), 0, cmd.length());
-						System.out.println();
-						int l = in.readInt();
-						in.read(buffer, 0, l);
-						String sMsg = new String(buffer, 0, l);
-						System.out.println(sMsg);
-						break;
-					} else if (com[0].equalsIgnoreCase("upload")) {// command
-						upload(cmd);
-						int length = in.readInt();
+                } catch (IOException ex) {
+                    System.err.println("Connection dropped!");
+                    System.exit(-1);
+                }
+            }
+        }
+        // out.close();
+        // clientSocket.close();
 
-						System.out.println(length);
-						while (length > 0) {
-							int blen = in.read(buffer, 0, buffer.length);
+    }
 
-							String ser = new String(buffer, 0, blen);
+    public void appStart(boolean login, boolean exit) throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        do {
+            byte[] buffer = new byte[1024];
+            System.out.print("Please input your username: ");
+            String username = scanner.nextLine();
+            System.out.print("Please input password: ");
+            String password = scanner.nextLine();
 
-							System.out.println(ser);
+            String str = "login " + username + " " + password;
+            out.writeInt(str.length());
+            out.write(str.getBytes(), 0, str.length());
 
-							length -= blen;
-						}
-					} else if (com[0].equalsIgnoreCase("download")) {
+            int len = in.readInt();
+            in.read(buffer, 0, len);
+            String serMsg = new String(buffer, 0, len);
+            System.out.println(serMsg);
+            if (serMsg.equals("Login success")) {
+                login = true;
+                System.out.println();
+                System.out.println("Available commands:");
+                System.out.println();
+                System.out.println("| rd directory_path | Remove sub-directory ");
+                System.out.println("| dir path | Read file list in the path ");
+                System.out.println("| md new_directory_path | Create new directory ");
+                System.out.println("| del file_path | File Delete");
+                System.out.println("| readDe file_path | Read details of the file ");
+                System.out.println("| ren original_file_path new_filename | File rename");
+                System.out.println("| upload | Upload the file");
+                System.out.println("| download | download the file");
+                System.out.println("| logout");
+                System.out.println("| exit");
+                System.out.println();
 
-						download(cmd);
+                do {
+                    System.out.print("Please input your command>");
+                    Scanner newScanner = new Scanner(System.in);
+                    String cmd = newScanner.nextLine();
+                    String[] com = cmd.split("\\s+");
+                    if(com.length==1){
+                        if (com[0].equalsIgnoreCase("logout")) {
+                            login = false;
+                            out.writeInt(cmd.length());
+                            out.write(cmd.getBytes(), 0, cmd.length());
 
-					} else {
+                            int l = in.readInt();
+                            in.read(buffer, 0, l);
+                            String sMsg = new String(buffer, 0, l);
+                            System.out.println(sMsg);
+                            break;
+                        } else if (com[0].equalsIgnoreCase("upload")) {// command
+                            upload(cmd);
+                            int length = in.readInt();
 
-						out.writeInt(cmd.length());
-						out.write(cmd.getBytes(), 0, cmd.length());
-						int length = in.readInt();
+                            while (length > 0) {
+                                int blen = in.read(buffer, 0, buffer.length);
 
-						System.out.println(length);
-						while (length > 0) {
-							int blen = in.read(buffer, 0, buffer.length);
+                                String ser = new String(buffer, 0, blen);
 
-							String ser = new String(buffer, 0, blen);
+                                System.out.println(ser);
 
-							System.out.println(ser);
+                                length -= blen;
+                            }
+                        } else if (com[0].equalsIgnoreCase("download")) {
 
-							length -= blen;
+                            download(cmd);
 
-						}
+                        }else if(com[0].equalsIgnoreCase("exit")){
+                            login=false;
+                            exit = true;
+                            out.writeInt(cmd.length());
+                            out.write(cmd.getBytes(), 0, cmd.length());
 
-					}
+                            int l = in.readInt();
+                            in.read(buffer, 0, l);
+                            String sMsg = new String(buffer, 0, l);
+                            System.out.println(sMsg);
+                            break;
+                        }else{
+                            System.out.println("Wrong command.");
 
-				} while (login);
-			}
+                        }
 
-		} while (!login);
-		scanner.close();
-	}
+                    } else {
 
-	public void upload(String cmd) throws IOException {
-		Scanner upload = new Scanner(System.in);
-		System.out.print("Please input the path and filename of the file you want to upload:");
-		String uploadfile = upload.nextLine();
+                        out.writeInt(cmd.length());
+                        out.write(cmd.getBytes(), 0, cmd.length());
+                        int length = in.readInt();
 
-		boolean fileExist = false;
+                        while (length > 0) {
+                            int blen = in.read(buffer, 0, buffer.length);
 
-		do {
-			File fileToUpload = new File(uploadfile);
-			if (fileToUpload.exists()) {
-				if (fileToUpload.isDirectory()) {
-					System.out.print("This is a directory.");
+                            String ser = new String(buffer, 0, blen);
 
-				} else {
-					fileExist = true;
-					break;
-				}
+                            System.out.println(ser);
 
-			} else {
-				System.out.println(uploadfile + " does not exist.");
-			}
-			System.out.print("Please input the path and filename of the file you want to upload:");
-			uploadfile = upload.nextLine();
+                            length -= blen;
 
-		} while (!fileExist);
-		cmd += " " + uploadfile;
-		System.out.print("Please input where to upload with filename:");
-		String uploadpath = upload.nextLine();
-		cmd += " " + uploadpath;
-		out.writeInt(cmd.length());
-		out.write(cmd.getBytes(), 0, cmd.length());
+                        }
 
-		String[] com = cmd.split("\\s+");
-		try {
-			byte[] buffer = new byte[1024];
-			File file = new File(com[1]);
-			FileInputStream inFile = new FileInputStream(file);
+                    }
 
-			long size = file.length();
-			out.writeLong(size);
+                } while (login);
+            }
 
-			while (size > 0) {
-				int len = inFile.read(buffer, 0, buffer.length);
-				out.write(buffer, 0, len);
-				size -= len;
-			}
+        } while (!exit);
 
-			System.out.println("Client Transmission finished.");
+    }
 
-		} catch (IOException e) {
-			System.err.println("Transmission error.");
-		}
-	}
+    public void upload(String cmd) throws IOException {
+        Scanner upload = new Scanner(System.in);
+        System.out.print("Please input the path and filename of the file you want to upload:");
+        String uploadfile = upload.nextLine();
 
-	public void download(String cmd) throws IOException {
-		Scanner download = new Scanner(System.in);
-		System.out.print("Please input the file you wish to download (path and filename):");
-		String downloadfile = download.nextLine();
-		cmd = "download " + downloadfile;
-		boolean downloadPathExist = false;
-		String downloadpath = "";
-		do {
-			System.out.print("Please input where do you wish to download the file(path ended with'/'):");
-			downloadpath = download.nextLine();
-			File downloadp = new File(downloadpath);
+        boolean fileExist = false;
 
-			if (downloadp.exists()) {
-				if (downloadp.isDirectory()) {
-					downloadPathExist = true;
+        do {
+            File fileToUpload = new File(uploadfile);
+            if (fileToUpload.exists()) {
+                if (fileToUpload.isDirectory()) {
+                    System.out.print("This is a directory.");
 
-				} else {
-					System.out.println("This is not a directory.");
-				}
-			} else {
-				System.out.println(downloadpath + " does not exist.");
-			}
-		} while (!downloadPathExist);
-		out.writeInt(cmd.length());
-		out.write(cmd.getBytes(), 0, cmd.length());
+                } else {
+                    fileExist = true;
+                    break;
+                }
 
-		byte[] buffer = new byte[1024];
-		int length = in.readInt();
-		in.read(buffer, 0, length);
+            } else {
+                System.out.println(uploadfile + " does not exist.");
+            }
+            System.out.print("Please input the path and filename of the file you want to upload:");
+            uploadfile = upload.nextLine();
 
-		System.out.println(length);
-		if (length == 0) {
-			try {
-				DataInputStream in = new DataInputStream(clientSocket.getInputStream());
-				int nameLen = in.readInt();
-				in.read(buffer, 0, nameLen);
-				String name = new String(buffer, 0, nameLen);
+        } while (!fileExist);
+        cmd += " " + uploadfile;
+        System.out.print("Please input where to upload with filename:");
+        String uploadpath = upload.nextLine();
+        cmd += " " + uploadpath;
+        out.writeInt(cmd.length());
+        out.write(cmd.getBytes(), 0, cmd.length());
 
-				File newfile = new File(downloadpath + name);
-				long size = in.readLong();
+        String[] com = cmd.split("\\s+");
+        try {
+            byte[] buffer = new byte[1024];
+            File file = new File(com[1]);
+            FileInputStream inFile = new FileInputStream(file);
 
-				FileOutputStream output = new FileOutputStream(newfile);
-				while (size > 0) {
-					int len = in.read(buffer, 0, buffer.length);
-					output.write(buffer, 0, len);
-					size -= len;
-				}
-				System.out.println("Client download completed.");
+            long size = file.length();
+            out.writeLong(size);
 
-			} catch (IOException e) {
-				System.err.println("unable to download file.");
-			}
-		} else {
+            while (size > 0) {
+                int len = inFile.read(buffer, 0, buffer.length);
+                out.write(buffer, 0, len);
+                size -= len;
+            }
 
-			String ser = new String(buffer, 0, length);
+//            System.out.println("Client Transmission finished.");
 
-			System.out.println(ser);
+        } catch (IOException e) {
+            System.err.println("Transmission error.");
+        }
+    }
 
-		}
+    public void download(String cmd) throws IOException {
+        Scanner download = new Scanner(System.in);
+        System.out.print("Please input the file you wish to download (path and filename):");
+        String downloadfile = download.nextLine();
+        cmd = "download " + downloadfile;
+        boolean downloadPathExist = false;
+        String downloadpath = "";
+        do {
+            System.out.print("Please input where do you wish to download the file(path ended with'/'):");
+            downloadpath = download.nextLine();
+            File downloadp = new File(downloadpath);
 
-	}
+            if (downloadp.exists()) {
+                if (downloadp.isDirectory()) {
+                    downloadPathExist = true;
 
-	public void end() {
-		udpSocket.close();
-		System.out.println("bye-bye");
-	}
+                } else {
+                    System.out.println("This is not a directory.");
+                }
+            } else {
+                System.out.println(downloadpath + " does not exist.");
+            }
+        } while (!downloadPathExist);
+        out.writeInt(cmd.length());
+        out.write(cmd.getBytes(), 0, cmd.length());
 
-	public static void main(String[] args) throws IOException {
+        byte[] buffer = new byte[1024];
+        int length = in.readInt();
+        in.read(buffer, 0, length);
+
+        if (length == 0) {
+            try {
+                DataInputStream in = new DataInputStream(clientSocket.getInputStream());
+                int nameLen = in.readInt();
+                in.read(buffer, 0, nameLen);
+                String name = new String(buffer, 0, nameLen);
+
+                File newfile = new File(downloadpath + name);
+                long size = in.readLong();
+
+                FileOutputStream output = new FileOutputStream(newfile);
+                while (size > 0) {
+                    int len = in.read(buffer, 0, buffer.length);
+                    output.write(buffer, 0, len);
+                    size -= len;
+                }
+
+
+            } catch (IOException e) {
+                System.err.println("unable to download file.");
+            }
+        } else {
+
+            String ser = new String(buffer, 0, length);
+
+            System.out.println(ser);
+
+        }
+
+    }
+
+    public void end() {
+        udpSocket.close();
+        System.out.println("bye-bye");
+    }
+
+    public static void main(String[] args) throws IOException {
 
 //		v3Client c = new v3Client();
 
 //		c.end();
-	}
+    }
 
 }
