@@ -33,6 +33,7 @@ public class Controller {
 			if (option.equalsIgnoreCase("y")) {
 				o = true;
 				new v3Client();
+				break;
 			}
 
 			try {

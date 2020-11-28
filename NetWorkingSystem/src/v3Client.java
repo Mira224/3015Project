@@ -28,7 +28,7 @@ public class v3Client {
 	DataOutputStream out;
 	ArrayList<Server> srvList = new ArrayList<Server>();
 
-	//start client side
+	// start client side
 	public v3Client() {
 		// udp thread
 		Thread udp = new Thread(() -> {
@@ -44,12 +44,12 @@ public class v3Client {
 		try {
 			TimeUnit.SECONDS.sleep(3);
 		} catch (InterruptedException e) {
-	
+
 			e.printStackTrace();
 		}
 		// tcp thread
 		try {
-			while (true)
+		
 				new v3Client(srvList, TCPport);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -88,39 +88,48 @@ public class v3Client {
 	// Print out the available servers for user to choose. After the server choose
 	// one server, connect to the sever for functions.
 	public v3Client(ArrayList<Server> srvList2, int port) throws IOException {
-		if (srvList2.size() > 0) {
-			boolean opCorrect = false;
-			int option = 0;
-			for (int i = 0; i < srvList2.size(); i++) {
-				System.out.println(i + " " + srvList2.get(i).IP + " " + srvList2.get(i).srvName);
-			}
+		boolean login = false;
+		boolean exit = false;
+		while (!exit) {
+			if (srvList2.size() > 0) {
 
-			while (!opCorrect) {
-				System.out.println("Which server do you want to join?");
-				Scanner srvOption = new Scanner(System.in);
-				option = srvOption.nextInt();
-				if (option < srvList2.size() && option >= 0)
-					opCorrect = true;
-
-			}
-			if (opCorrect) {
-				clientSocket = new Socket(srvList2.get(option).IP, port);
-				in = new DataInputStream(clientSocket.getInputStream());
-				out = new DataOutputStream(clientSocket.getOutputStream());
-
-				boolean login = false;
-				boolean exit = false;
-				try {
-					TimeUnit.SECONDS.sleep(1);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+				boolean opCorrect = false;
+				int option = 0;
+				for (int i = 0; i < srvList2.size(); i++) {
+					System.out.println(i + " " + srvList2.get(i).IP + " " + srvList2.get(i).srvName);
 				}
-				try {
-					appStart(login, exit);
 
-				} catch (IOException ex) {
-					System.err.println("Connection dropped!");
-					System.exit(-1);
+				while (!opCorrect) {
+					System.out.println("Which server do you want to join? (please input the index)");
+					Scanner srvOption = new Scanner(System.in);
+					option = srvOption.nextInt();
+					if (option < srvList2.size() && option >= 0)
+						opCorrect = true;
+					else
+						System.out.println("Wrong input");
+				}
+				if (opCorrect) {
+					clientSocket = new Socket(srvList2.get(option).IP, port);
+					in = new DataInputStream(clientSocket.getInputStream());
+					out = new DataOutputStream(clientSocket.getOutputStream());
+
+					try {
+						TimeUnit.SECONDS.sleep(1);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					try {
+						exit = appStart(login, exit);
+						if (exit) {
+							out.close();
+							clientSocket.close();
+							return;
+						}
+						
+					} catch (IOException ex) {
+						System.err.println("Connection dropped!");
+						System.exit(-1);
+					}
 				}
 			}
 		}
@@ -128,7 +137,7 @@ public class v3Client {
 
 	// Use TCP to communicate with server. This class is a controller for different
 	// commands and this class sends the commands to the server.
-	public void appStart(boolean login, boolean exit) throws IOException {
+	public boolean appStart(boolean login, boolean exit) throws IOException {
 		Scanner scanner = new Scanner(System.in);
 		do {
 			byte[] buffer = new byte[1024];
@@ -136,6 +145,18 @@ public class v3Client {
 			String username = scanner.nextLine();
 			System.out.print("Please input password: ");
 			String password = scanner.nextLine();
+			if(username.equalsIgnoreCase("exit")||password.equalsIgnoreCase("exit")) {
+				exit = true;
+				String str = "exit";
+				out.writeInt(str.length());
+				out.write(str.getBytes(), 0, str.length());
+
+				int len = in.readInt();
+				in.read(buffer, 0, len);
+				String serMsg = new String(buffer, 0, len);
+				System.out.println(serMsg);
+				return exit;
+			}
 
 			String str = "login " + username + " " + password;
 			out.writeInt(str.length());
@@ -202,7 +223,7 @@ public class v3Client {
 							in.read(buffer, 0, l);
 							String sMsg = new String(buffer, 0, l);
 							System.out.println(sMsg);
-							break;
+							return exit;
 						} else {
 							System.out.println("Wrong command.");
 						}
@@ -222,6 +243,7 @@ public class v3Client {
 				} while (login);
 			}
 		} while (!exit);
+		return exit;
 	}
 
 	// Upload the file to the server. Ask the user to input specific path and
@@ -304,7 +326,8 @@ public class v3Client {
 		byte[] buffer = new byte[1024];
 		int length = in.readInt();
 		in.read(buffer, 0, length);
-//The length of the return message. If the file can be download, the length of return message will be 0.  
+		// The length of the return message. If the file can be download, the length of
+		// return message will be 0.
 		if (length == 0) {
 			try {
 				DataInputStream in = new DataInputStream(clientSocket.getInputStream());
@@ -338,6 +361,5 @@ public class v3Client {
 		udpSocket.close();
 		System.out.println("bye-bye");
 	}
-
 
 }

@@ -250,11 +250,11 @@ public class v3Server {
 		return false;
 	}
 
-	// function read files fine
+	// function list files in the path
 	public String readFile(String path) {
 		File read = new File(path);
 		if (!read.exists()) {
-			return "Not Find The File.";
+			return "Not Find The Path.";
 		}
 		String reMsg = "";
 		File[] files = read.listFiles();
