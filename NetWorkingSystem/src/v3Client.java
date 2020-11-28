@@ -181,6 +181,7 @@ public class v3Client {
 				System.out.println("| download | download the file");
 				System.out.println("| logout");
 				System.out.println("| exit");
+				System.out.println("| help");
 				System.out.println();
 
 				do {
@@ -189,7 +190,23 @@ public class v3Client {
 					String cmd = newScanner.nextLine();
 					String[] com = cmd.split("\\s+");
 					if (com.length == 1) {
-						if (com[0].equalsIgnoreCase("logout")) {
+						if (com[0].equalsIgnoreCase("help")) {
+							System.out.println("Available commands:");
+							System.out.println();
+							System.out.println("| rd directory_path | Remove sub-directory ");
+							System.out.println("| dir path | Read file list in the path ");
+							System.out.println("| md new_directory_path | Create new directory ");
+							System.out.println("| del file_path | File Delete");
+							System.out.println("| readDe file_path | Read details of the file ");
+							System.out.println("| ren original_file_path new_filename | File rename");
+							System.out.println("| upload | Upload the file");
+							System.out.println("| download | download the file");
+							System.out.println("| logout");
+							System.out.println("| exit");
+							System.out.println("| help");
+					
+						}
+						else if (com[0].equalsIgnoreCase("logout")) {
 							login = false;
 							out.writeInt(cmd.length());
 							out.write(cmd.getBytes(), 0, cmd.length());
